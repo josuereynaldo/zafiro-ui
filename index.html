@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zafiro Agent — Invoice Processor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:    #1B2A4A;
+    --gold:    #C9A84C;
+    --cream:   #F5F0E8;
+    --dark:    #0d1018;
+    --card:    #131720;
+    --border:  rgba(201,168,76,0.15);
+    --text:    #c8c4bc;
+    --muted:   #5a5750;
+    --green:   #4caf7d;
+    --red:     #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 640px; margin: 0 auto;
+    padding: 52px 24px 100px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 52px;
+  }
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px; letter-spacing: 5px;
+    color: var(--gold); font-weight: 300;
+    text-transform: uppercase;
+  }
+  .badge {
+    font-size: 9px; letter-spacing: 3px;
+    font-weight: 800; color: var(--navy);
+    background: var(--gold);
+    padding: 4px 10px; border-radius: 2px;
+  }
+
+  /* ── Hero ── */
+  .eyebrow {
+    font-size: 10px; letter-spacing: 4px;
+    font-weight: 700; color: var(--muted);
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(40px, 9vw, 60px);
+    font-weight: 300; line-height: 1.0;
+    color: var(--cream); margin-bottom: 18px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .sub {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.75; max-width: 460px;
+    margin-bottom: 44px;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    display: flex; align-items: center;
+    gap: 16px; margin: 36px 0;
+  }
+  .d-line { flex: 1; height: 1px; background: var(--border); }
+  .d-dot  { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: 0.4; }
+
+  /* ── Upload ── */
+  .upload-label {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 44px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+    background: rgba(201,168,76,0.02);
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-label::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .upload-label:hover::after,
+  .upload-label.has-file::after { opacity: 1; }
+  .upload-label.has-file { border-color: rgba(201,168,76,0.45); }
+
+  #fileInput { display: none; }
+
+  .upload-icon {
+    font-size: 32px; margin-bottom: 14px;
+    display: block; transition: transform 0.3s;
+  }
+  .upload-label.has-file .upload-icon { transform: scale(0.85); }
+  .upload-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 300;
+    color: var(--cream); margin-bottom: 8px;
+  }
+  .upload-hint {
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--muted); font-weight: 700;
+  }
+  .file-name {
+    margin-top: 14px; font-size: 12px;
+    color: var(--gold); font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Button ── */
+  .run-btn {
+    width: 100%; padding: 19px;
+    background: var(--gold); color: var(--navy);
+    border: none; border-radius: 4px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 800;
+    letter-spacing: 5px; text-transform: uppercase;
+    cursor: pointer; transition: opacity 0.25s;
+    margin-bottom: 44px;
+  }
+  .run-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+  .run-btn:hover:not(:disabled) { opacity: 0.88; }
+
+  /* ── Steps ── */
+  .steps-label {
+    font-size: 10px; letter-spacing: 4px;
+    color: var(--muted); font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .steps { display: flex; flex-direction: column; gap: 2px; }
+
+  .step {
+    display: flex; align-items: center; gap: 16px;
+    padding: 15px 18px; border-radius: 3px;
+    background: rgba(255,255,255,0.015);
+    border-left: 2px solid transparent;
+    transition: all 0.35s ease;
+  }
+  .step-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px; color: var(--muted);
+    min-width: 18px; font-weight: 300;
+    transition: color 0.3s;
+  }
+  .step-label {
+    font-size: 12px; color: var(--muted);
+    font-weight: 500; flex: 1;
+    transition: color 0.3s;
+  }
+  .spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(201,168,76,0.15);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    display: none; flex-shrink: 0;
+  }
+  .step-status {
+    font-size: 9px; letter-spacing: 2px;
+    font-weight: 800; opacity: 0;
+    transition: opacity 0.3s;
+    min-width: 36px; text-align: right;
+  }
+
+  /* States */
+  .step.running {
+    background: rgba(201,168,76,0.06);
+    border-left-color: var(--gold);
+  }
+  .step.running .step-num,
+  .step.running .step-label { color: var(--gold); }
+  .step.running .spinner { display: block; }
+  .step.running .step-status { opacity: 1; color: var(--gold); }
+
+  .step.done {
+    background: rgba(76,175,125,0.05);
+    border-left-color: var(--green);
+  }
+  .step.done .step-num,
+  .step.done .step-label { color: #7dcca4; }
+  .step.done .step-status { opacity: 1; color: var(--green); }
+
+  .step.error {
+    background: rgba(224,92,92,0.05);
+    border-left-color: var(--red);
+  }
+  .step.error .step-num,
+  .step.error .step-label { color: #e08080; }
+  .step.error .step-status { opacity: 1; color: var(--red); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Result panels ── */
+  .panel {
+    margin-top: 28px; padding: 26px;
+    border-radius: 4px; display: none;
+    animation: rise 0.4s ease;
+  }
+  .panel-ok {
+    border: 1px solid rgba(76,175,125,0.2);
+    background: rgba(76,175,125,0.04);
+  }
+  .panel-err {
+    border: 1px solid rgba(224,92,92,0.2);
+    background: rgba(224,92,92,0.04);
+  }
+  .panel-label {
+    font-size: 9px; letter-spacing: 4px;
+    font-weight: 800; margin-bottom: 12px;
+  }
+  .panel-ok .panel-label { color: var(--green); }
+  .panel-err .panel-label { color: var(--red); }
+  .panel-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; font-weight: 300;
+    color: var(--cream); line-height: 1.65;
+  }
+  .panel-err .panel-text {
+    font-family: monospace; font-size: 11px;
+    color: #e08080; white-space: pre-wrap;
+    word-break: break-all; line-height: 1.6;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 64px; padding-top: 22px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+    align-items: center;
+  }
+  .foot-l { font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+  .live-dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--green);
+    margin-right: 7px;
+    animation: pulse 2.5s ease infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="wordmark">Zafiro Clothing Co.</div>
+    <div class="badge">AGENT v1</div>
+  </div>
+
+  <div class="eyebrow">OPERATIONS PIPELINE</div>
+  <h1>Invoice<br><em>Processor</em></h1>
+  <p class="sub">Sube una factura de proveedor y el agente ejecuta los 6 pasos del pipeline automáticamente — linesheet, Notion Drop Tracker, Buyer Report, Dashboard.</p>
+
+  <div class="divider">
+    <div class="d-line"></div><div class="d-dot"></div><div class="d-line"></div>
+  </div>
+
+  <label class="upload-label" id="zone" for="fileInput">
+    <span class="upload-icon" id="uIcon">📄</span>
+    <div class="upload-title" id="uTitle">Seleccionar factura</div>
+    <div class="upload-hint">PDF · Undergold · James Bark · GFTD · Ami Paris</div>
+    <div class="file-name" id="uFile"></div>
+  </label>
+  <input type="file" id="fileInput" accept=".pdf" onchange="onFile(this)">
+
+  <button class="run-btn" id="runBtn" onclick="run()" disabled>
+    Ejecutar Pipeline
+  </button>
+
+  <div class="steps-label">PIPELINE — 6 PASOS</div>
+  <div class="steps" id="steps">
+    <div class="step" id="s1">
+      <span class="step-num">01</span>
+      <span class="step-label">Parsear factura</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss1">—</span>
+    </div>
+    <div class="step" id="s2">
+      <span class="step-num">02</span>
+      <span class="step-label">Generar linesheet Excel</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss2">—</span>
+    </div>
+    <div class="step" id="s3">
+      <span class="step-num">03</span>
+      <span class="step-label">Crear Drop Tracker en Notion</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss3">—</span>
+    </div>
+    <div class="step" id="s4">
+      <span class="step-num">04</span>
+      <span class="step-label">Actualizar Buyer Report</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss4">—</span>
+    </div>
+    <div class="step" id="s5">
+      <span class="step-num">05</span>
+      <span class="step-label">Actualizar Dashboard Excel</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss5">—</span>
+    </div>
+    <div class="step" id="s6">
+      <span class="step-num">06</span>
+      <span class="step-label">Actualizar Notion Dashboard</span>
+      <div class="spinner"></div>
+      <span class="step-status" id="ss6">—</span>
+    </div>
+  </div>
+
+  <div class="panel panel-ok" id="panelOk">
+    <div class="panel-label">✓ PIPELINE COMPLETADO</div>
+    <div class="panel-text" id="panelOkText"></div>
+  </div>
+
+  <div class="panel panel-err" id="panelErr">
+    <div class="panel-label">ERROR</div>
+    <div class="panel-text" id="panelErrText"></div>
+  </div>
+
+  <footer>
+    <span class="foot-l"><span class="live-dot"></span>AGENT ONLINE</span>
+    <span class="foot-l">railway · vercel · production</span>
+  </footer>
+</div>
+
+<script>
+  const AGENT = "https://zafiro-agent-production.up.railway.app";
+
+  const stepMap = {
+    parse_invoice:             "s1",
+    generate_linesheet:        "s2",
+    create_drop_tracker_entry: "s3",
+    update_buyer_report:       "s4",
+    update_dashboard:          "s5",
+    update_notion_dashboard:   "s6"
+  };
+
+  let pickedFile = null;
+
+  function onFile(input) {
+    const f = input.files[0];
+    if (!f) return;
+    pickedFile = f;
+    document.getElementById("uFile").textContent  = f.name;
+    document.getElementById("uIcon").textContent  = "✅";
+    document.getElementById("uTitle").textContent = "Factura seleccionada";
+    document.getElementById("zone").classList.add("has-file");
+    document.getElementById("runBtn").disabled = false;
+  }
+
+  function setState(id, cls, status) {
+    document.getElementById(id).className = "step " + cls;
+    document.getElementById("s" + id.slice(1)).querySelector
+      ? null : null;
+    document.getElementById("ss" + id.slice(1)).textContent = status;
+  }
+
+  // Read as DataURL — most reliable across all Safari contexts
+  function readAsDataURL(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload  = e => res(e.target.result.split(",")[1]);
+      r.onerror = () => rej(new Error("No se pudo leer el archivo."));
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function run() {
+    if (!pickedFile) return;
+
+    // Reset UI
+    document.getElementById("runBtn").disabled = true;
+    document.getElementById("panelOk").style.display  = "none";
+    document.getElementById("panelErr").style.display = "none";
+    ["s1","s2","s3","s4","s5","s6"].forEach(id => setState(id, "", "—"));
+
+    // Animate steps while waiting
+    let cur = 1;
+    const iv = setInterval(() => {
+      if (cur <= 6) { setState("s" + cur, "running", "···"); cur++; }
+    }, 6000);
+
+    try {
+      const b64 = await readAsDataURL(pickedFile);
+
+      const res = await fetch(`${AGENT}/pipeline/run-b64`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: pickedFile.name, data: b64 })
+      });
+
+      clearInterval(iv);
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data, null, 2));
+
+      // Mark steps
+      ["s1","s2","s3","s4","s5","s6"].forEach(id => setState(id, "", "—"));
+      (data.steps_completed || []).forEach(key => {
+        const id = stepMap[key];
+        if (id) setState(id, "done", "OK");
+      });
+
+      document.getElementById("panelOk").style.display = "block";
+      document.getElementById("panelOkText").textContent =
+        data.summary || "Pipeline completado exitosamente.";
+
+    } catch (err) {
+      clearInterval(iv);
+      ["s1","s2","s3","s4","s5","s6"].forEach(id => setState(id, "error", "ERR"));
+      document.getElementById("panelErr").style.display = "block";
+      document.getElementById("panelErrText").textContent = err.message;
+    }
+
+    document.getElementById("runBtn").disabled = false;
+  }
+</script>
+</body>
+</html>
