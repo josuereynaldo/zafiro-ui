@@ -38,7 +38,6 @@ const response = await fetch(RAILWAY_URL + "/pipeline/run", {
 
 const result = await response.json();
 return res.status(response.status).json(result);
-```
 
 } catch (err) {
 return res.status(500).json({
